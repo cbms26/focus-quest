@@ -27,29 +27,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Core Game Loop ---
   function startTimer() {
-    if (isRunning) return;
+    // If timer is already running, exit the function
+    if (isRunning) {
+      return;
+    }
+
+    // Update timer state and button appearance
     isRunning = true;
     startPauseBtn.textContent = "Pause";
     startPauseBtn.classList.remove("is-success");
     startPauseBtn.classList.add("is-warning");
 
-    timerInterval = setInterval(() => {
+    // Start the timer interval
+    timerInterval = setInterval(function () {
+      // If seconds reach zero
       if (currentSeconds === 0) {
+        // If both minutes and seconds are zero
         if (currentMinutes === 0) {
           handleSessionEnd();
           return;
         }
-        currentMinutes--;
+        // Decrement minutes and reset seconds
+        currentMinutes = currentMinutes - 1;
         currentSeconds = 59;
       } else {
-        currentSeconds--;
+        // Decrement seconds
+        currentSeconds = currentSeconds - 1;
       }
       updateDisplay();
     }, 1000);
   }
 
   function pauseTimer() {
+    // Stop the timer interval
     clearInterval(timerInterval);
+
+    // Update timer state and button appearance
     isRunning = false;
     startPauseBtn.textContent = "Start";
     startPauseBtn.classList.remove("is-warning");
@@ -57,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function resetTimer() {
+    // Stop the timer and reset all values
     pauseTimer();
     repsCompleted = 0;
     setMode("focus");
@@ -64,18 +78,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function handleSessionEnd() {
+    // Pause the current timer
     pauseTimer();
 
+    // Handle focus mode completion
     if (mode === "focus") {
-      repsCompleted++;
+      // Increment completed repetitions
+      repsCompleted = repsCompleted + 1;
       updateRepsDisplay();
 
+      // Check if full cycle is completed
       if (repsCompleted === REPS_PER_CYCLE) {
         cycleSound.play();
         promptAndSaveTask();
-        repsCompleted = 0; // Reset for the next full cycle
-        // A small delay before updating hearts, so to give a sense of completion
-        setTimeout(updateRepsDisplay, 500);
+        // Reset for the next full cycle
+        repsCompleted = 0;
+        // Add a small delay before updating hearts for visual feedback
+        setTimeout(function () {
+          updateRepsDisplay();
+        }, 500);
       } else {
         repSound.play();
       }
@@ -84,21 +105,36 @@ document.addEventListener("DOMContentLoaded", () => {
       setMode("focus");
     }
 
-    setTimeout(() => startTimer(), 1000);
+    // Start next session after a delay
+    setTimeout(function () {
+      startTimer();
+    }, 1000);
   }
 
   function promptAndSaveTask() {
+    // Ask user for task name
     const taskTitle = prompt("Mission Complete! Name your completed quest:");
-    if (taskTitle && taskTitle.trim() !== "") {
+
+    // Check if task title exists and is not empty
+    if (taskTitle && taskTitle.trim().length > 0) {
+      // Create new task object
       const completedTask = {
         id: Date.now(),
         title: taskTitle.trim(),
         date: new Date().toLocaleString(),
       };
-      const tasks = JSON.parse(localStorage.getItem("pomodoroTasks")) || [];
+
+      // Get existing tasks or initialize empty array
+      let tasks = [];
+      const savedTasks = localStorage.getItem("pomodoroTasks");
+      if (savedTasks) {
+        tasks = JSON.parse(savedTasks);
+      }
+
+      // Add new task and save
       tasks.push(completedTask);
       localStorage.setItem("pomodoroTasks", JSON.stringify(tasks));
-      alert(`Quest "${taskTitle}" saved to your Quest Log!`);
+      alert('Quest "' + taskTitle + '" saved to your Quest Log!');
     } else {
       alert("Quest was not named and has been lost to time...");
     }
@@ -106,10 +142,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- UI and State Updates ---
   function updateDisplay() {
-    const minutes = String(currentMinutes).padStart(2, "0");
-    const seconds = String(currentSeconds).padStart(2, "0");
-    timeDisplay.textContent = `${minutes}:${seconds}`;
-    document.title = `${minutes}:${seconds} - Focus Quest`;
+    // Format minutes and seconds with leading zeros
+    let minutes = String(currentMinutes);
+    if (minutes.length === 1) {
+      minutes = "0" + minutes;
+    }
+
+    let seconds = String(currentSeconds);
+    if (seconds.length === 1) {
+      seconds = "0" + seconds;
+    }
+
+    // Update display and page title
+    timeDisplay.textContent = minutes + ":" + seconds;
+    document.title = minutes + ":" + seconds + " - Focus Quest";
   }
 
   function setMode(newMode) {
